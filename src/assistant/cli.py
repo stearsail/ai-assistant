@@ -1,9 +1,9 @@
 import asyncio
-import sys
 import getpass
-from dotenv import load_dotenv
+import sys
+
+from assistant import config
 from assistant.agent import run_agent
-import assistant.config as config
 
 
 def setup_oauth() -> None:
@@ -21,7 +21,6 @@ def setup_oauth() -> None:
             print("Saving credentials to configuration file...")
             config.save_credentials(google_oauth_client_id, google_oauth_client_secret)
             print("Credentials saved.")
-
 
 
 def setup_api() -> None:
@@ -42,8 +41,8 @@ def main() -> None:
     setup_api()
     try:
         api_key = config.load_anthropic_api_key()["anthropic_api_key"]
+        asyncio.run(run_agent(api_key))
     except config.MissingAPIKey as e:
         print(e, file=sys.stderr)
         return 1
-    asyncio.run(run_agent(api_key))
     return 0

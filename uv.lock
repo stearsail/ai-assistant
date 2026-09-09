@@ -118,6 +118,7 @@ dependencies = [
     { name = "fastmcp" },
     { name = "mcp" },
     { name = "python-dotenv" },
+    { name = "questionary" },
 ]
 
 [package.dev-dependencies]
@@ -131,6 +132,7 @@ requires-dist = [
     { name = "fastmcp", specifier = ">=4.0.3" },
     { name = "mcp", specifier = ">=2.1.1" },
     { name = "python-dotenv", specifier = ">=1.2.3" },
+    { name = "questionary", specifier = ">=2.1.1" },
 ]
 
 [package.metadata.requires-dev]
