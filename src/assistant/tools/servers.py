@@ -1,5 +1,9 @@
-import assistant.config as config
+import os
+
 from agno.tools.mcp import MCPTools
+
+from assistant import config
+
 
 def _get_servers() -> dict:
     creds = config.load_credentials()
@@ -9,6 +13,11 @@ def _get_servers() -> dict:
             "env": {
                 "GOOGLE_OAUTH_CLIENT_ID": creds["client_id"],
                 "GOOGLE_OAUTH_CLIENT_SECRET": creds["client_secret"],
+                **{
+                    k: os.environ[k]
+                    for k in ("DISPLAY", "XDG_RUNTIME_DIR")
+                    if k in os.environ
+                },
             },
         },
     }
