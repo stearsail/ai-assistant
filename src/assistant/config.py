@@ -1,5 +1,5 @@
-import os
 import json
+import os
 from pathlib import Path
 
 CONFIG_DIR = Path.home() / ".config" / "assistant"
@@ -29,9 +29,15 @@ def _write_all(data: dict) -> None:
     CONFIG_FILE.chmod(0o600)
 
 
-def save_credentials(client_id, client_secret) -> None:
+def save_credentials(client_id: str, client_secret: str) -> None:
     data = _read_all()
     data["google"] = {"client_id": client_id, "client_secret": client_secret}
+    _write_all(data)
+
+
+def update_credential(field: str, value: str) -> None:
+    data = _read_all()
+    data.setdefault("google", {})[field] = value
     _write_all(data)
 
 
