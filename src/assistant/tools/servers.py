@@ -9,7 +9,7 @@ def _get_servers() -> dict:
     creds = config.load_credentials()
     return {
         "google_workspace": {
-            "command": "uvx workspace-mcp --tools calendar tasks gmail docs",
+            "command": "uvx workspace-mcp --tools calendar tasks gmail docs --tool-tier core",
             "env": {
                 "GOOGLE_OAUTH_CLIENT_ID": creds["client_id"],
                 "GOOGLE_OAUTH_CLIENT_SECRET": creds["client_secret"],

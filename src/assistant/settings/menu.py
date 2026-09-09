@@ -1,7 +1,13 @@
 import questionary
+from assistant.settings.anthropic import modify_api_key
 from assistant.settings.google import modify_oauth_credentials
+from assistant.settings.view import view_configuration
 
-MENU = {"Change Google OAuth credentials": modify_oauth_credentials}
+MENU = {
+    "View current configuration": view_configuration,
+    "Change Google OAuth credentials": modify_oauth_credentials,
+    "Change Anthropic API Key": modify_api_key,
+}
 
 
 async def settings_menu() -> None:

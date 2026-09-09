@@ -47,6 +47,62 @@ def save_anthropic_api_key(api_key: str) -> None:
     _write_all(data)
 
 
+def _mask(value: str, keep_prefix: int = 7, keep_suffix: int = 4) -> str:
+    if len(value) < keep_prefix + keep_suffix + 8:
+        return "•" * 12
+    return f"{value[:keep_prefix]}{'•' * 8}{value[-keep_suffix:]}"
+
+
+def config_status() -> list[dict]:
+    data = _read_all()
+    google_from_env = (
+        "GOOGLE_OAUTH_CLIENT_ID" in os.environ
+        and "GOOGLE_OAUTH_CLIENT_SECRET" in os.environ
+    )
+    google = os.environ if google_from_env else data.get("google", {})
+    anthropic_from_env = "ANTHROPIC_API_KEY" in os.environ
+    entries = [
+        (
+            "Anthropic API key",
+            os.environ["ANTHROPIC_API_KEY"]
+            if anthropic_from_env
+            else data.get("anthropic", {}).get("api_key"),
+            anthropic_from_env,
+            True,
+        ),
+        (
+            "Google client ID",
+            google.get("GOOGLE_OAUTH_CLIENT_ID" if google_from_env else "client_id"),
+            google_from_env,
+            False, 
+        ),
+        (
+            "Google client secret",
+            google.get(
+                "GOOGLE_OAUTH_CLIENT_SECRET" if google_from_env else "client_secret"
+            ),
+            google_from_env,
+            True,
+        ),
+    ]
+
+    return [
+        {
+            "label": label,
+            "configured": bool(value),
+            "source": ("environment" if from_env else "config file") if value else "-",
+            "display": (
+                "(not set)"
+                if not value
+                else _mask(value)
+                if is_secret
+                else value
+            ),
+        }
+        for label, value, from_env, is_secret in entries
+    ]
+
+
 def load_credentials() -> dict:
     if (
         "GOOGLE_OAUTH_CLIENT_ID" in os.environ
