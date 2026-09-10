@@ -28,30 +28,31 @@ async def prompt_all_fields() -> dict | None:
     return values
 
 
-async def _modify_selected_credential(selected_cred: str) -> None:
+async def _modify_selected_credential(selected_cred: str) -> bool:
     label, prompt_fn, validator = FIELDS[selected_cred]
     value = await prompt_fn(f"New {label}:", validate=validator).ask_async()
     if not value or not value.strip():
-        return
+        return False
     confirm = await questionary.confirm(
         f"Are you sure you want to modify your {label}?"
     ).ask_async()
     if confirm:
         update_credential(selected_cred, value.strip())
         questionary.print(f"\n{label} modified successfully\n", style="italic")
-        return
+        return True
     questionary.print(f"\n{label} modification cancelled\n", style="italic")
+    return False
 
 
-async def modify_oauth_credentials() -> None:
+async def modify_oauth_credentials() -> bool:
     choices = [
         questionary.Choice(title=label, value=field)
         for field, (label, *_) in FIELDS.items()
     ]
     choices.append(questionary.Choice("Cancel", value=None))
+    changed = False
     while True:
         choice = await questionary.select("Modify:", choices=choices).ask_async()
-
         if choice is None or choice == "Cancel":
-            return
-        await _modify_selected_credential(choice)
+            return changed
+        changed = await _modify_selected_credential(choice) or changed

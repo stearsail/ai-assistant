@@ -11,7 +11,7 @@ async def setup_oauth() -> None:
     try:
         config.load_credentials()
         questionary.print(
-            "\nLoaded Google OAuth credentials\n", style="fg:#87ae73 bold italic"
+            "\nLoaded Google OAuth credentials", style="fg:#87ae73 bold italic"
         )
         return
     except config.MissingCredentials as e:
@@ -32,7 +32,9 @@ async def setup_oauth() -> None:
 async def setup_api() -> None:
     try:
         config.load_anthropic_api_key()
-        print("Loaded API Key.")
+        questionary.print(
+            "Loaded Anthropic API key\n", style="fg:#87ae73 bold italic"
+        )
     except config.MissingAPIKey as e:
         api_key = await questionary.password(
             f"{e}\n Please enter your Anthropic API key:",
@@ -56,7 +58,7 @@ async def _run() -> int:
     except (config.MissingAPIKey, config.MissingCredentials) as e:
         print(e, file=sys.stderr)
         return 1
-    await run_agent(api_key)
+    await run_agent()
     return 0
 
 

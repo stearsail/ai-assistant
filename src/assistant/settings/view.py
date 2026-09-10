@@ -7,7 +7,7 @@ _MISSING = "fg:ansired"
 _MUTED = "fg:ansibrightblack"
 
 
-async def view_configuration() -> None:
+async def view_configuration() -> bool:
     rows = config_status()
     width = max(len(row["label"]) for row in rows)
 
@@ -32,3 +32,4 @@ async def view_configuration() -> None:
         )
     questionary.print("")
     await questionary.press_any_key_to_continue().ask_async()
+    return False

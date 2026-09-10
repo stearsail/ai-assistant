@@ -10,7 +10,8 @@ MENU = {
 }
 
 
-async def settings_menu() -> None:
+async def settings_menu() -> bool:
+    changed = False
     choices = [questionary.Choice(title=label, value=fn) for label, fn in MENU.items()]
     choices.append(questionary.Choice("Back", value=None))
     while True:
@@ -19,8 +20,8 @@ async def settings_menu() -> None:
             choices=choices,
         ).ask_async()
         if action is None or action == "Back":
-            return
-        await action()
+            return changed
+        changed = await action() or changed
 
         # choices=[
         #     "View current configuration",
