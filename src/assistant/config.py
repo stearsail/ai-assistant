@@ -29,9 +29,15 @@ def _write_all(data: dict) -> None:
     CONFIG_FILE.chmod(0o600)
 
 
-def save_credentials(client_id: str, client_secret: str) -> None:
+def save_credentials(
+    client_id: str, client_secret: str, user_gmail: str = None
+) -> None:
     data = _read_all()
-    data["google"] = {"client_id": client_id, "client_secret": client_secret}
+    data["google"] = {
+        "client_id": client_id,
+        "client_secret": client_secret,
+        "user_gmail": user_gmail,
+    }
     _write_all(data)
 
 
@@ -47,6 +53,41 @@ def save_anthropic_api_key(api_key: str) -> None:
     _write_all(data)
 
 
+def load_credentials() -> dict:
+    if (
+        "GOOGLE_OAUTH_CLIENT_ID" in os.environ
+        and "GOOGLE_OAUTH_CLIENT_SECRET" in os.environ
+    ):
+        return {
+            "client_id": os.environ["GOOGLE_OAUTH_CLIENT_ID"],
+            "client_secret": os.environ["GOOGLE_OAUTH_CLIENT_SECRET"],
+            "user_gmail": os.environ["USER_GOOGLE_EMAIL"],
+        }
+    google = _read_all().get("google", {})
+    client_id, client_secret, user_gmail = (
+        google.get("client_id"),
+        google.get("client_secret"),
+        google.get("user_gmail"),
+    )
+    if not (client_id and client_secret):
+        raise MissingCredentials("No Google OAuth credentials found")
+    return {
+        "client_id": client_id,
+        "client_secret": client_secret,
+        "user_gmail": user_gmail,
+    }
+
+
+def load_anthropic_api_key() -> dict:
+    if "ANTHROPIC_API_KEY" in os.environ:
+        return {"anthropic_api_key": os.environ["ANTHROPIC_API_KEY"]}
+
+    api_key = _read_all().get("anthropic", {}).get("api_key")
+    if not api_key:
+        raise MissingAPIKey("No Anthropic API key found.")
+    return {"anthropic_api_key": api_key}
+
+
 def _mask(value: str, keep_prefix: int = 7, keep_suffix: int = 4) -> str:
     if len(value) < keep_prefix + keep_suffix + 8:
         return "•" * 12
@@ -59,6 +100,7 @@ def config_status() -> list[dict]:
         "GOOGLE_OAUTH_CLIENT_ID" in os.environ
         and "GOOGLE_OAUTH_CLIENT_SECRET" in os.environ
     )
+    gmail_from_env = "USER_GOOGLE_EMAIL" in os.environ
     google = os.environ if google_from_env else data.get("google", {})
     anthropic_from_env = "ANTHROPIC_API_KEY" in os.environ
     entries = [
@@ -74,7 +116,7 @@ def config_status() -> list[dict]:
             "Google client ID",
             google.get("GOOGLE_OAUTH_CLIENT_ID" if google_from_env else "client_id"),
             google_from_env,
-            False, 
+            False,
         ),
         (
             "Google client secret",
@@ -84,6 +126,13 @@ def config_status() -> list[dict]:
             google_from_env,
             True,
         ),
+        (
+            "Google account email",
+            os.environ.get("USER_GOOGLE_EMAIL")
+            or data.get("google", {}).get("user_gmail"),
+            gmail_from_env,
+            False,
+        ),
     ]
 
     return [
@@ -92,38 +141,8 @@ def config_status() -> list[dict]:
             "configured": bool(value),
             "source": ("environment" if from_env else "config file") if value else "-",
             "display": (
-                "(not set)"
-                if not value
-                else _mask(value)
-                if is_secret
-                else value
+                "(not set)" if not value else _mask(value) if is_secret else value
             ),
         }
         for label, value, from_env, is_secret in entries
     ]
-
-
-def load_credentials() -> dict:
-    if (
-        "GOOGLE_OAUTH_CLIENT_ID" in os.environ
-        and "GOOGLE_OAUTH_CLIENT_SECRET" in os.environ
-    ):
-        return {
-            "client_id": os.environ["GOOGLE_OAUTH_CLIENT_ID"],
-            "client_secret": os.environ["GOOGLE_OAUTH_CLIENT_SECRET"],
-        }
-    google = _read_all().get("google", {})
-    client_id, client_secret = google.get("client_id"), google.get("client_secret")
-    if not (client_id and client_secret):
-        raise MissingCredentials("No Google credentials found. Run: assistant setup")
-    return {"client_id": client_id, "client_secret": client_secret}
-
-
-def load_anthropic_api_key() -> dict:
-    if "ANTHROPIC_API_KEY" in os.environ:
-        return {"anthropic_api_key": os.environ["ANTHROPIC_API_KEY"]}
-
-    api_key = _read_all().get("anthropic", {}).get("api_key")
-    if not api_key:
-        raise MissingAPIKey("No Anthropic API key found. Run: assistant setup")
-    return {"anthropic_api_key": api_key}

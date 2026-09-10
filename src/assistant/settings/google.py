@@ -4,6 +4,7 @@ from assistant.config import update_credential
 from assistant.settings.validators import (
     validate_google_client_id,
     validate_google_client_secret,
+    validate_user_gmail,
 )
 
 FIELDS = {
@@ -13,7 +14,18 @@ FIELDS = {
         questionary.password,
         validate_google_client_secret,
     ),
+    "user_gmail": ("Gmail Address", questionary.text, validate_user_gmail),
 }
+
+
+async def prompt_all_fields() -> dict | None:
+    values = {}
+    for field, (label, prompt_fn, validator) in FIELDS.items():
+        value = await prompt_fn(f"{label}:", validate=validator).ask_async()
+        if value is None:
+            return None
+        values[field] = value.strip() or None
+    return values
 
 
 async def _modify_selected_credential(selected_cred: str) -> None:

@@ -7,18 +7,18 @@ from assistant import config
 
 def _get_servers() -> dict:
     creds = config.load_credentials()
+    env = {
+        "GOOGLE_OAUTH_CLIENT_ID": creds["client_id"],
+        "GOOGLE_OAUTH_CLIENT_SECRET": creds["client_secret"],
+        **{k: os.environ[k] for k in ("DISPLAY", "XDG_RUNTIME_DIR") if k in os.environ},
+    }
+    if creds.get("user_gmail"):
+        env["USER_GOOGLE_EMAIL"] = creds["user_gmail"]
+
     return {
         "google_workspace": {
-            "command": "uvx workspace-mcp --tools calendar tasks gmail docs --tool-tier core",
-            "env": {
-                "GOOGLE_OAUTH_CLIENT_ID": creds["client_id"],
-                "GOOGLE_OAUTH_CLIENT_SECRET": creds["client_secret"],
-                **{
-                    k: os.environ[k]
-                    for k in ("DISPLAY", "XDG_RUNTIME_DIR")
-                    if k in os.environ
-                },
-            },
+            "command": "uvx workspace-mcp --permissions calendar:full tasks:manage gmail:readonly docs:readonly --tool-tier core",
+            "env": env,
         },
     }
 
