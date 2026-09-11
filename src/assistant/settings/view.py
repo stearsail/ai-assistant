@@ -1,6 +1,6 @@
 import questionary
 
-from assistant.config import CONFIG_FILE, config_status
+from assistant.config.credentials import CREDENTIALS_FILE, config_status
 
 _OK = "fg:ansigreen"
 _MISSING = "fg:ansired"
@@ -21,7 +21,7 @@ async def view_configuration() -> bool:
         )
         questionary.print(f"    {'':<{width}}  from {row['source']}", style=_MUTED)
 
-    questionary.print(f"\n  Stored in {CONFIG_FILE}", style=_MUTED)
+    questionary.print(f"\n  Stored in {CREDENTIALS_FILE}", style=_MUTED)
 
     if any(row["source"] == "environment" for row in rows):
         questionary.print(

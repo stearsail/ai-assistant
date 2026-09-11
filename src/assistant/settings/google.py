@@ -1,6 +1,10 @@
 import questionary
 
-from assistant.config import update_credential
+from assistant import prompts
+from assistant.config.credentials import (
+    credential_status,
+    update_credential,
+)
 from assistant.settings.validators import (
     validate_google_client_id,
     validate_google_client_secret,
@@ -8,13 +12,13 @@ from assistant.settings.validators import (
 )
 
 FIELDS = {
-    "client_id": ("Client ID", questionary.text, validate_google_client_id),
+    "client_id": ("Client ID", prompts.text, validate_google_client_id),
     "client_secret": (
         "Client Secret",
-        questionary.password,
+        prompts.password,
         validate_google_client_secret,
     ),
-    "user_gmail": ("Gmail Address", questionary.text, validate_user_gmail),
+    "user_gmail": ("Gmail Address", prompts.text, validate_user_gmail),
 }
 
 
@@ -30,10 +34,16 @@ async def prompt_all_fields() -> dict | None:
 
 async def _modify_selected_credential(selected_cred: str) -> bool:
     label, prompt_fn, validator = FIELDS[selected_cred]
+    current = credential_status(f"google.{selected_cred}")
+    if current:
+        questionary.print(
+            f"\n Current: {current['display']}",
+            style="fg:ansibrightblack",
+        )
     value = await prompt_fn(f"New {label}:", validate=validator).ask_async()
     if not value or not value.strip():
         return False
-    confirm = await questionary.confirm(
+    confirm = await prompts.confirm(
         f"Are you sure you want to modify your {label}?"
     ).ask_async()
     if confirm:
@@ -52,7 +62,7 @@ async def modify_oauth_credentials() -> bool:
     choices.append(questionary.Choice("Cancel", value=None))
     changed = False
     while True:
-        choice = await questionary.select("Modify:", choices=choices).ask_async()
+        choice = await prompts.select("Modify:", choices=choices).ask_async()
         if choice is None or choice == "Cancel":
             return changed
         changed = await _modify_selected_credential(choice) or changed

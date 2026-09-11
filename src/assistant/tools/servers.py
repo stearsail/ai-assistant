@@ -2,11 +2,11 @@ import os
 
 from agno.tools.mcp import MCPTools
 
-from assistant import config
+from assistant.config.credentials import load_credentials
 
 
 def _get_servers() -> dict:
-    creds = config.load_credentials()
+    creds = load_credentials()
     env = {
         "GOOGLE_OAUTH_CLIENT_ID": creds["client_id"],
         "GOOGLE_OAUTH_CLIENT_SECRET": creds["client_secret"],
