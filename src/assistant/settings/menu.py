@@ -1,4 +1,6 @@
 import questionary
+
+from assistant import prompts
 from assistant.settings.anthropic import modify_api_key
 from assistant.settings.google import modify_oauth_credentials
 from assistant.settings.view import view_configuration
@@ -15,7 +17,7 @@ async def settings_menu() -> bool:
     choices = [questionary.Choice(title=label, value=fn) for label, fn in MENU.items()]
     choices.append(questionary.Choice("Back", value=None))
     while True:
-        action = await questionary.select(
+        action = await prompts.select(
             "Settings",
             choices=choices,
         ).ask_async()
