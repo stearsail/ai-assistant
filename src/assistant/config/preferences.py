@@ -59,3 +59,11 @@ def update_provider(provider: str) -> None:
     data = _load_all()
     data["model"]["provider"] = provider
     _write_preferences(data)
+    
+def update_model(provider: str, model_id: str) -> None:
+    if provider not in PROVIDERS:
+        raise ValueError(f"Unknown provider: {provider}")
+    data = _load_all()
+    data["model"][provider]["id"] = model_id
+    _write_preferences(data)
+

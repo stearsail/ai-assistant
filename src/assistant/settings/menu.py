@@ -1,14 +1,17 @@
 import questionary
 
 from assistant import prompts
+from assistant.config.preferences import update_provider
 from assistant.settings.anthropic import modify_api_key
 from assistant.settings.google import modify_oauth_credentials
+from assistant.settings.provider import modify_provider_settings
 from assistant.settings.view import view_configuration
 
 MENU = {
     "View current configuration": view_configuration,
     "Change Google OAuth credentials": modify_oauth_credentials,
     "Change Anthropic API Key": modify_api_key,
+    "Change provider settings": modify_provider_settings,
 }
 
 
