@@ -1,7 +1,6 @@
 import questionary
 
 from assistant import prompts
-from assistant.config.preferences import update_provider
 from assistant.settings.anthropic import modify_api_key
 from assistant.settings.google import modify_oauth_credentials
 from assistant.settings.provider import modify_provider_settings
@@ -27,12 +26,3 @@ async def settings_menu() -> bool:
         if action is None or action == "Back":
             return changed
         changed = await action() or changed
-
-        # choices=[
-        #     "View current configuration",
-        #     "Change API key",
-        #     "Change Google OAuth credentials",
-        #     "Re-authenticate Google Account",
-        #     "Choose enabled services",
-        #     "Back",
-        # ],

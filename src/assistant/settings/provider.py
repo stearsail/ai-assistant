@@ -10,23 +10,22 @@ from assistant.config.preferences import PROVIDERS, load_preferences, update_mod
 async def _switch_provider() -> bool:
     current = load_preferences()["provider"]
     other = next(p for p in PROVIDERS if p != current)
-    while True:
-        switch = await prompts.confirm(
-            f"Are you sure you want to change the provider to {other.capitalize()}?"
-        ).ask_async()
-        if switch:
-            if other == "anthropic":
-                try:
-                    load_anthropic_api_key()
-                except MissingAPIKey as e:
-                    await prompts.text(
-                        "Could not switch provider to Anthropic, no API key is set",
-                        style="fg:#ff0000 bold italic",
-                    )
-                    return False
-            update_provider(other)
-            return True
-        return False
+    switch = await prompts.confirm(
+        f"Are you sure you want to change the provider to {other.capitalize()}?"
+    ).ask_async()
+    if switch:
+        if other == "anthropic":
+            try:
+                load_anthropic_api_key()
+            except MissingAPIKey:
+                questionary.print(
+                    "Could not switch provider to Anthropic, no API key is set",
+                    style="fg:#ff0000 bold italic",
+                )
+                return False
+        update_provider(other)
+        return True
+    return False
 
 
 ANTHROPIC_MODELS = ("claude-haiku-4-5-20251001", "claude-sonnet-5", "claude-opus-5")
