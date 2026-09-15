@@ -40,8 +40,6 @@ def validate_google_client_secret(value: str) -> bool | str:
 
 def validate_user_gmail(value: str) -> bool | str:
     value = value.strip()
-    if not value:
-        return True  # optional
     if any(char.isspace() for char in value):
         return "Email cannot contain spaces."
     if value.count("@") != 1:
