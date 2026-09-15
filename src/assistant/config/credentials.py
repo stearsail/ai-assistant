@@ -60,7 +60,7 @@ def load_credentials() -> dict:
         google.get("client_secret"),
         google.get("user_gmail"),
     )
-    if not (client_id and client_secret):
+    if not (client_id and client_secret and user_gmail):
         raise MissingCredentials("No Google OAuth credentials found")
     return {
         "client_id": client_id,
@@ -90,8 +90,8 @@ def config_status() -> list[dict]:
     google_from_env = (
         "GOOGLE_OAUTH_CLIENT_ID" in os.environ
         and "GOOGLE_OAUTH_CLIENT_SECRET" in os.environ
+        and "USER_GOOGLE_EMAIL" in os.environ
     )
-    gmail_from_env = "USER_GOOGLE_EMAIL" in os.environ
     google = os.environ if google_from_env else data.get("google", {})
     anthropic_from_env = "ANTHROPIC_API_KEY" in os.environ
     # field id, label, value, from_env, is_secret
@@ -126,7 +126,7 @@ def config_status() -> list[dict]:
             "Google account email",
             os.environ.get("USER_GOOGLE_EMAIL")
             or data.get("google", {}).get("user_gmail"),
-            gmail_from_env,
+            google_from_env,
             False,
         ),
     ]
