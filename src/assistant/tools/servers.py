@@ -10,6 +10,7 @@ def _get_servers() -> dict:
     env = {
         "GOOGLE_OAUTH_CLIENT_ID": creds["client_id"],
         "GOOGLE_OAUTH_CLIENT_SECRET": creds["client_secret"],
+        "WORKSPACE_MCP_LOG_LEVEL": "ERROR", #SET TO INFO TO DEBUG 
         **{k: os.environ[k] for k in ("DISPLAY", "XDG_RUNTIME_DIR") if k in os.environ},
     }
     if creds.get("user_gmail"):
