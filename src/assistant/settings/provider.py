@@ -4,7 +4,12 @@ import questionary
 import ollama
 from assistant import prompts
 from assistant.config.credentials import MissingAPIKey, load_anthropic_api_key
-from assistant.config.preferences import PROVIDERS, load_preferences, update_model, update_provider
+from assistant.config.preferences import (
+    PROVIDERS,
+    load_preferences,
+    update_model,
+    update_provider,
+)
 
 
 async def _switch_provider() -> bool:
@@ -41,16 +46,29 @@ async def _ollama_choices(host: str, current: str) -> list[questionary.Choice] |
         models = (await client.list()).models
         infos = await asyncio.gather(*(client.show(m.model) for m in models))
     except ConnectionError:
-        questionary.print(f"Could not connect to Ollama at {host}", style="fg:#ff0000 bold italic")
         return None
     return [
         questionary.Choice(
             title=_title(m.model, current, f"{m.size / 1e9:.1f} GB"),
             value=m.model,
-            disabled=None if "tools" in (info.capabilities or []) else "no tool support",
+            disabled=None
+            if "tools" in (info.capabilities or [])
+            else "no tool support",
         )
         for m, info in zip(models, infos)
     ]
+
+
+async def ollama_model_error(host: str, model_id: str) -> str | None:
+    choices = await _ollama_choices(host, current="")
+    if choices is None:
+        return f"Could not connect to Ollama at {host}"
+    match = next((c for c in choices if c.value == model_id), None)
+    if match is None:
+        return f"{model_id} is not installed. Pull it with: ollama pull {model_id}"
+    if match.disabled:
+        return f"{model_id} has no tool support"
+    return None
 
 
 async def _switch_model() -> bool:
@@ -61,9 +79,16 @@ async def _switch_model() -> bool:
     if provider == "ollama":
         choices = await _ollama_choices(prefs["ollama"]["host"], current)
         if choices is None:
+            questionary.print(
+                f"Could not connect to Ollama at {prefs['ollama']['host']}",
+                style="fg:#ff0000 bold italic",
+            )
             return False
     else:
-        choices = [questionary.Choice(title=_title(m, current), value=m) for m in ANTHROPIC_MODELS]
+        choices = [
+            questionary.Choice(title=_title(m, current), value=m)
+            for m in ANTHROPIC_MODELS
+        ]
 
     if not any(c.disabled is None for c in choices):
         questionary.print(

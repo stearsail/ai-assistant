@@ -89,7 +89,9 @@ async def _chat(
             break
         if message == "/new":
             session_id = str(uuid.uuid4())
-            questionary.print("\nStarted a new conversation\n", style="fg:#e5de00 italic")
+            questionary.print(
+                "\nStarted a new conversation\n", style="fg:#e5de00 italic"
+            )
             continue
         if message == "/settings":
             if await settings_menu():
@@ -103,7 +105,7 @@ async def _chat(
 
 
 async def run_agent(resume: bool = True) -> None:
-    db = SqliteDb(db_file=str(CONFIG_DIR/"sessions.db"))
+    db = SqliteDb(db_file=str(CONFIG_DIR / "sessions.db"))
     session = PromptSession()
     session_id = _latest_session_id(db) if resume else None
     if resume:
