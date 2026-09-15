@@ -1,15 +1,15 @@
 from contextlib import AsyncExitStack
 from pathlib import Path
 import uuid
-import questionary
-from agno.agent import Agent
+from agno.agent import Agent, ToolCallStartedEvent, RunContentEvent
 from agno.db.base import SessionType
 from agno.db.sqlite import SqliteDb
 from agno.models.ollama import Ollama
 from agno.models.anthropic import Claude
 from prompt_toolkit import PromptSession
+from rich.live import Live
 
-from assistant import prompts
+from assistant import prompts, ui
 from assistant.config.credentials import (
     MissingAPIKey,
     load_anthropic_api_key,
@@ -75,6 +75,35 @@ def _setup_agent(model, user_gmail, toolkits, db, session_id) -> Agent:
     return agent
 
 
+async def _stream_reply(agent: Agent, message: str, session_id: str) -> None:
+    text = ""
+    # rich allows one live display at a time: stop the spinner before the reply starts
+    status = ui.console.status("Thinking…")
+    live = Live(
+        ui.assistant_panel(""),
+        console=ui.console,
+        refresh_per_second=15,
+        vertical_overflow="visible",
+    )
+    status.start()
+    try:
+        async for event in agent.arun(
+            input=message, stream=True, stream_events=True, session_id=session_id
+        ):
+            if isinstance(event, ToolCallStartedEvent):
+                ui.show(f"→ {event.tool.tool_name}", "tool")
+            elif isinstance(event, RunContentEvent) and event.content:
+                if not live.is_started:
+                    status.stop()
+                    live.start()
+                text += event.content
+                live.update(ui.assistant_panel(text))
+    finally:
+        status.stop()
+        live.stop()
+    ui.console.print()
+
+
 async def _chat(
     agent: Agent, session: PromptSession, session_id: str
 ) -> tuple[bool, str]:
@@ -89,31 +118,27 @@ async def _chat(
             break
         if message == "/new":
             session_id = str(uuid.uuid4())
-            questionary.print(
-                "\nStarted a new conversation\n", style="fg:#e5de00 italic"
-            )
+            ui.notice("Started a new conversation", before=1, after=1)
             continue
         if message == "/settings":
             if await settings_menu():
                 return True, session_id
             continue
         if message:
-            await agent.aprint_response(
-                input=message, stream=True, session_id=session_id
-            )
+            ui.console.print(ui.user_panel(message))
+            await _stream_reply(agent, message, session_id)
     return False, session_id
 
 
 async def run_agent(resume: bool = True) -> None:
     db = SqliteDb(db_file=str(CONFIG_DIR / "sessions.db"))
-    session = PromptSession()
+    session = PromptSession(erase_when_done=True)
     session_id = _latest_session_id(db) if resume else None
     if resume:
-        questionary.print(
+        ui.notice(
             "Resuming last conversation"
             if session_id
-            else "No previous conversation found, starting a new one",
-            style="fg:#e5de00 italic",
+            else "No previous conversation found, starting a new one"
         )
     session_id = session_id or str(uuid.uuid4())
     while True:
@@ -124,10 +149,7 @@ async def run_agent(resume: bool = True) -> None:
             try:
                 api_key = load_anthropic_api_key()["anthropic_api_key"]
             except MissingAPIKey:
-                questionary.print(
-                    "No Anthropic API key set, switched provider to Ollama",
-                    style="fg:#ff0000 bold italic",
-                )
+                ui.error("No Anthropic API key set, switched provider to Ollama")
                 update_provider("ollama")
                 prefs = load_preferences()
         model = _build_model(prefs, api_key)
@@ -137,6 +159,4 @@ async def run_agent(resume: bool = True) -> None:
             reload, session_id = await _chat(agent, session, session_id)
         if not reload:
             return
-        questionary.print(
-            "\nRestarting with new configuration\n", style="fg:#effd5f bold italic"
-        )
+        ui.notice("Restarting with new configuration", before=1, after=1)
