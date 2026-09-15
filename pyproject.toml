@@ -8,13 +8,14 @@ authors = [
 ]
 requires-python = ">=3.10"
 dependencies = [
-    "agno[anthropic,ollama]>=3.0.6",
+    "agno[anthropic,ollama,sqlalchemy]>=3.0.6",
     "fastmcp>=4.0.3",
     "mcp>=2.1.1",
     "ollama>=0.6.2",
     "openai>=3.13.0",
     "python-dotenv>=1.2.3",
     "questionary>=2.1.1",
+    "sqlalchemy>=2.0.53",
 ]
 
 [project.scripts]

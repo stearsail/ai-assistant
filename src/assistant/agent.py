@@ -1,8 +1,10 @@
 from contextlib import AsyncExitStack
-
+from pathlib import Path
+import uuid
 import questionary
 from agno.agent import Agent
 from agno.db.in_memory import InMemoryDb
+from agno.db.sqlite import SqliteDb
 from agno.models.ollama import Ollama
 from agno.models.anthropic import Claude
 from prompt_toolkit import PromptSession
@@ -14,6 +16,7 @@ from assistant.config.credentials import (
     load_credentials,
 )
 from assistant.config.preferences import load_preferences, update_provider
+from assistant.config.utils import CONFIG_DIR
 from assistant.settings.menu import settings_menu
 from assistant.tools.servers import build_toolkits
 
@@ -78,9 +81,9 @@ async def _chat(agent: Agent, session: PromptSession) -> bool:
 
 
 async def run_agent() -> None:
-    db = InMemoryDb()
+    db = SqliteDb(db_file=str(CONFIG_DIR/"sessions.db"))
     session = PromptSession()
-    session_id = "cli"
+    session_id = str(uuid.uuid4())
     while True:
         user_gmail = load_credentials().get("user_gmail")
         prefs = load_preferences()
