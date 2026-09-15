@@ -3,7 +3,7 @@ from pathlib import Path
 import uuid
 import questionary
 from agno.agent import Agent
-from agno.db.in_memory import InMemoryDb
+from agno.db.base import SessionType
 from agno.db.sqlite import SqliteDb
 from agno.models.ollama import Ollama
 from agno.models.anthropic import Claude
@@ -19,6 +19,20 @@ from assistant.config.preferences import load_preferences, update_provider
 from assistant.config.utils import CONFIG_DIR
 from assistant.settings.menu import settings_menu
 from assistant.tools.servers import build_toolkits
+
+AGENT_ID = "personal-assistant-agent"
+
+
+def _latest_session_id(db: SqliteDb) -> str | None:
+    sessions = db.get_sessions(
+        session_type=SessionType.AGENT,
+        component_id=AGENT_ID,
+        sort_by="updated_at",
+        sort_order="desc",
+        limit=1,
+        include_runs=False,
+    )
+    return sessions[0].session_id if sessions else None
 
 
 def _build_model(prefs: dict, api_key: str | None) -> Claude | Ollama:
@@ -47,7 +61,7 @@ def _setup_agent(model, user_gmail, toolkits, db, session_id) -> Agent:
         )
     agent = Agent(
         db=db,
-        id="personal-assistant-agent",
+        id=AGENT_ID,
         session_id=session_id,
         name="Personal Assistant",
         instructions=instructions,
@@ -61,7 +75,9 @@ def _setup_agent(model, user_gmail, toolkits, db, session_id) -> Agent:
     return agent
 
 
-async def _chat(agent: Agent, session: PromptSession) -> bool:
+async def _chat(
+    agent: Agent, session: PromptSession, session_id: str
+) -> tuple[bool, str]:
     while True:
         try:
             message = (
@@ -71,19 +87,33 @@ async def _chat(agent: Agent, session: PromptSession) -> bool:
             break
         if message in ("exit", "quit"):
             break
+        if message == "/new":
+            session_id = str(uuid.uuid4())
+            questionary.print("\nStarted a new conversation\n", style="fg:#e5de00 italic")
+            continue
         if message == "/settings":
             if await settings_menu():
-                return True
+                return True, session_id
             continue
         if message:
-            await agent.aprint_response(input=message, stream=True)
-    return False
+            await agent.aprint_response(
+                input=message, stream=True, session_id=session_id
+            )
+    return False, session_id
 
 
-async def run_agent() -> None:
+async def run_agent(resume: bool = True) -> None:
     db = SqliteDb(db_file=str(CONFIG_DIR/"sessions.db"))
     session = PromptSession()
-    session_id = str(uuid.uuid4())
+    session_id = _latest_session_id(db) if resume else None
+    if resume:
+        questionary.print(
+            "Resuming last conversation"
+            if session_id
+            else "No previous conversation found, starting a new one",
+            style="fg:#e5de00 italic",
+        )
+    session_id = session_id or str(uuid.uuid4())
     while True:
         user_gmail = load_credentials().get("user_gmail")
         prefs = load_preferences()
@@ -102,7 +132,7 @@ async def run_agent() -> None:
         async with AsyncExitStack() as stack:
             toolkits = [await stack.enter_async_context(t) for t in build_toolkits()]
             agent = _setup_agent(model, user_gmail, toolkits, db, session_id)
-            reload = await _chat(agent, session)
+            reload, session_id = await _chat(agent, session, session_id)
         if not reload:
             return
         questionary.print(

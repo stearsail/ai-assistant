@@ -1,3 +1,4 @@
+import argparse
 import asyncio
 import sys
 import questionary
@@ -77,7 +78,7 @@ async def setup_preferences() -> None:
         questionary.print(f"{e}", style="fg:#87ae73 bold italic")
 
 
-async def _run() -> int:
+async def _run(resume: bool) -> int:
     await setup_preferences()
     await setup_oauth()
     await setup_api()
@@ -86,9 +87,16 @@ async def _run() -> int:
     except MissingCredentials as e:
         print(e, file=sys.stderr)
         return 1
-    await run_agent()
+    await run_agent(resume=resume)
     return 0
 
 
 def main() -> int:
-    return asyncio.run(_run())
+    parser = argparse.ArgumentParser(prog="assistant")
+    parser.add_argument(
+        "--new",
+        action="store_true",
+        help="start a new conversation instead of resuming the last one",
+    )
+    args = parser.parse_args()
+    return asyncio.run(_run(resume=not args.new))
