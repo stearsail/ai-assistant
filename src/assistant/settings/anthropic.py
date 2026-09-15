@@ -1,6 +1,4 @@
-import questionary
-
-from assistant import prompts
+from assistant import prompts, ui
 from assistant.config.credentials import save_anthropic_api_key
 from assistant.settings.validators import validate_anthropic_api_key
 
@@ -15,8 +13,8 @@ async def modify_api_key() -> bool:
         "Are you sure you want to change your API key?"
     ).ask_async()
     if not confirm:
-        questionary.print("\nAPI key modification cancelled\n", style="italic")
+        ui.muted("API key modification cancelled", before=1, after=1)
         return False
     save_anthropic_api_key(api_key=api_key.strip())
-    questionary.print("\nAnthropic API key modified successfully\n", style="italic")
+    ui.success("Anthropic API key modified successfully", before=1, after=1)
     return True

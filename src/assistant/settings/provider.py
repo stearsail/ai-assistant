@@ -2,7 +2,7 @@ import asyncio
 
 import questionary
 import ollama
-from assistant import prompts
+from assistant import prompts, ui
 from assistant.config.credentials import MissingAPIKey, load_anthropic_api_key
 from assistant.config.preferences import (
     PROVIDERS,
@@ -23,10 +23,7 @@ async def _switch_provider() -> bool:
             try:
                 load_anthropic_api_key()
             except MissingAPIKey:
-                questionary.print(
-                    "Could not switch provider to Anthropic, no API key is set",
-                    style="fg:#ff0000 bold italic",
-                )
+                ui.error("Could not switch provider to Anthropic, no API key is set")
                 return False
         update_provider(other)
         return True
@@ -79,10 +76,7 @@ async def _switch_model() -> bool:
     if provider == "ollama":
         choices = await _ollama_choices(prefs["ollama"]["host"], current)
         if choices is None:
-            questionary.print(
-                f"Could not connect to Ollama at {prefs['ollama']['host']}",
-                style="fg:#ff0000 bold italic",
-            )
+            ui.error(f"Could not connect to Ollama at {prefs['ollama']['host']}")
             return False
     else:
         choices = [
@@ -91,9 +85,8 @@ async def _switch_model() -> bool:
         ]
 
     if not any(c.disabled is None for c in choices):
-        questionary.print(
-            "No models with tool support installed. Pull one with: ollama pull <model>",
-            style="fg:#ff0000 bold italic",
+        ui.error(
+            "No models with tool support installed. Pull one with: ollama pull <model>"
         )
         return False
 
@@ -103,7 +96,7 @@ async def _switch_model() -> bool:
         return False
 
     update_model(provider, model)
-    questionary.print(f"\nModel changed to {model}\n", style="italic")
+    ui.success(f"Model changed to {model}", before=1, after=1)
     return True
 
 

@@ -1,6 +1,6 @@
 import questionary
 
-from assistant import prompts
+from assistant import prompts, ui
 from assistant.config.credentials import (
     credential_status,
     update_credential,
@@ -36,10 +36,7 @@ async def _modify_selected_credential(selected_cred: str) -> bool:
     label, prompt_fn, validator = FIELDS[selected_cred]
     current = credential_status(f"google.{selected_cred}")
     if current:
-        questionary.print(
-            f"\n Current: {current['display']}",
-            style="fg:ansibrightblack",
-        )
+        ui.muted(f"Current: {current['display']}", before=1)
     value = await prompt_fn(f"New {label}:", validate=validator).ask_async()
     if not value or not value.strip():
         return False
@@ -48,9 +45,9 @@ async def _modify_selected_credential(selected_cred: str) -> bool:
     ).ask_async()
     if confirm:
         update_credential(selected_cred, value.strip())
-        questionary.print(f"\n{label} modified successfully\n", style="italic")
+        ui.success(f"{label} modified successfully", before=1, after=1)
         return True
-    questionary.print(f"\n{label} modification cancelled\n", style="italic")
+    ui.muted(f"{label} modification cancelled", before=1, after=1)
     return False
 
 

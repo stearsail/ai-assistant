@@ -1,7 +1,6 @@
 import argparse
 import asyncio
 import sys
-import questionary
 from assistant.config.credentials import (
     load_anthropic_api_key,
     load_credentials,
@@ -10,7 +9,7 @@ from assistant.config.credentials import (
     MissingCredentials,
     MissingAPIKey,
 )
-from assistant import prompts
+from assistant import prompts, ui
 from assistant.agent import run_agent
 from assistant.config.preferences import (
     PROVIDERS,
@@ -30,29 +29,24 @@ from assistant.settings.view import view_configuration
 async def setup_oauth() -> None:
     try:
         load_credentials()
-        questionary.print(
-            "Loaded Google OAuth credentials", style="fg:#87ae73 bold italic"
-        )
+        ui.success("Loaded Google OAuth credentials")
         return
     except MissingCredentials as e:
-        questionary.print(f"\n{e}", style="fg:#ff0000 bold italic")
-        questionary.print(
+        ui.error(str(e), before=1)
+        ui.show(
             "Please enter your google OAuth credentials (Cloud Console → APIs & Services → Credentials)"
         )
         values = await prompt_all_fields()
         if values is None:
             return
         save_credentials(**values)
-        questionary.print(
-            "\nSaved Google OAuth credentials in configuration\n",
-            style="fg:#87ae73 bold italic",
-        )
+        ui.success("Saved Google OAuth credentials in configuration", before=1, after=1)
 
 
 async def setup_api() -> None:
     try:
         load_anthropic_api_key()
-        questionary.print("Loaded Anthropic API key\n", style="fg:#87ae73 bold italic")
+        ui.success("Loaded Anthropic API key", after=1)
     except MissingAPIKey as e:
         answer = await prompts.confirm(
             f"{e}\nWould you like to set an API key now?"
@@ -63,29 +57,20 @@ async def setup_api() -> None:
                 validate=validate_anthropic_api_key,
             ).ask_async()
             if api_key is None:
-                questionary.print(
-                    "Skipped adding API key",
-                    style="fg:#ff0000 bold italic",
-                )
+                ui.error("Skipped adding API key")
                 return
             save_anthropic_api_key(api_key.strip())
-            questionary.print(
-                "\nSaved Anthropic API key in configuration",
-                style="fg:#87ae73 bold italic",
-            )
-            questionary.print(
-                "To use Anthropic as model provider, change Preferences in Settings",
-                style="fg:ansibrightblack",
-            )
+            ui.success("Saved Anthropic API key in configuration", before=1)
+            ui.muted("To use Anthropic as model provider, change Preferences in Settings")
         return
 
 
 async def setup_preferences() -> None:
     try:
         load_preferences()
-        questionary.print("Loaded preferences", style="fg:#87ae73 bold italic")
+        ui.success("Loaded preferences")
     except DefaultPreferences as e:
-        questionary.print(f"{e}", style="fg:#87ae73 bold italic")
+        ui.success(str(e))
 
 
 def _preferences() -> dict:
@@ -96,7 +81,7 @@ def _preferences() -> dict:
 
 
 def _error(message: str) -> int:
-    questionary.print(message, style="fg:#ff0000 bold italic")
+    ui.error(message)
     return 1
 
 
@@ -121,9 +106,7 @@ async def _settings_command(args: argparse.Namespace) -> int:
 async def _show_command(args: argparse.Namespace) -> int:
     prefs = _preferences()
     provider = prefs["provider"]
-    questionary.print(
-        f"\n  Provider: {provider} ({prefs[provider]['id']})", style="bold"
-    )
+    ui.show(f"  Provider: {provider} ({prefs[provider]['id']})", "heading", before=1)
     await view_configuration()
     return 0
 
@@ -147,7 +130,7 @@ async def _provider_command(args: argparse.Namespace) -> int:
                 "No Anthropic API key set. Add one with: assistant config api-key"
             )
     update_provider(args.name)
-    questionary.print(f"Provider set to {args.name}", style="fg:#87ae73 bold italic")
+    ui.success(f"Provider set to {args.name}")
     return 0
 
 
@@ -159,9 +142,7 @@ async def _model_command(args: argparse.Namespace) -> int:
         if error:
             return _error(error)
     update_model(provider, args.id)
-    questionary.print(
-        f"{provider} model set to {args.id}", style="fg:#87ae73 bold italic"
-    )
+    ui.success(f"{provider} model set to {args.id}")
     return 0
 
 
