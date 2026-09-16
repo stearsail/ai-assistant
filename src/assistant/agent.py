@@ -1,7 +1,12 @@
 from contextlib import AsyncExitStack
 from pathlib import Path
 import uuid
-from agno.agent import Agent, ToolCallStartedEvent, RunContentEvent
+from agno.agent import (
+    Agent,
+    ToolCallStartedEvent,
+    RunContentEvent,
+    RunPausedEvent,
+)
 from agno.db.base import SessionType
 from agno.db.sqlite import SqliteDb
 from agno.models.ollama import Ollama
@@ -74,23 +79,52 @@ def _setup_agent(model, user_gmail, toolkits, db, session_id) -> Agent:
     return agent
 
 
+async def _confirm_tools(paused: RunPausedEvent) -> None:
+    for requirement in paused.active_requirements:
+        if not requirement.needs_confirmation:
+            continue
+        tool = requirement.tool_execution
+        args = ", ".join(f"{k}={v}" for k, v in (tool.tool_args or {}).items())
+        ui.show(f"{tool.tool_name}({args})", "notice", before=1)
+        if await prompts.confirm("Run this tool?").ask_async():
+            requirement.confirm()
+        else:
+            requirement.reject("The user declined this tool call")
+
+
 async def _stream_reply(agent: Agent, message: str, session_id: str) -> None:
     status = ui.console.status("Thinking…")
     status.start()
     printer = ui.StreamPrinter()
-    streaming = False
+    stream = agent.arun(
+        input=message, stream=True, stream_events=True, session_id=session_id
+    )
     try:
-        async for event in agent.arun(
-            input=message, stream=True, stream_events=True, session_id=session_id
-        ):
-            if isinstance(event, ToolCallStartedEvent):
-                printer.break_line()
-                ui.show(f"→ {event.tool.tool_name}", "tool")
-            elif isinstance(event, RunContentEvent) and event.content:
-                if not streaming:
+        while stream is not None:
+            paused = None
+            async for event in stream:
+                if isinstance(event, RunPausedEvent):
+                    paused = event
+                elif isinstance(event, ToolCallStartedEvent):
+                    printer.break_line()
+                    ui.show(f"→ {event.tool.tool_name}", "tool")
+                elif isinstance(event, RunContentEvent) and event.content:
                     status.stop()
-                    streaming = True
-                printer.write(event.content)
+                    printer.write(event.content)
+            stream = None
+            # a tool needs confirmation: ask, then carry on from where the run stopped
+            if paused is not None:
+                printer.break_line()
+                status.stop()
+                await _confirm_tools(paused)
+                status.start()
+                stream = agent.acontinue_run(
+                    run_id=paused.run_id,
+                    requirements=paused.requirements,
+                    stream=True,
+                    stream_events=True,
+                    session_id=session_id,
+                )
     finally:
         status.stop()
         printer.close()
