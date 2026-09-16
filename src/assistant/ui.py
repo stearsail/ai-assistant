@@ -1,10 +1,8 @@
 from rich.console import Console
-from rich.markdown import Markdown
-from rich.panel import Panel
 from rich.text import Text
 from rich.theme import Theme
 
-# shared with prompts.py so the qmark matches the user box border
+# shared with prompts.py so the qmark matches the echoed message
 USER_COLOR = "cyan"
 
 console = Console(
@@ -18,11 +16,75 @@ console = Console(
             "ok": "green",
             "missing": "red",
             "tool": "dim cyan",
-            "user_border": USER_COLOR,
-            "assistant_border": "bright_black",
+            "user": USER_COLOR,
         }
     )
 )
+
+
+STREAM_INDENT = 2
+
+
+class StreamPrinter:
+    # wraps as it prints so every line keeps the margin, the terminal would wrap to column 0
+    def __init__(self, indent: int = STREAM_INDENT):
+        self.indent = indent
+        self.col = 0
+        self.word = ""
+        self.fresh = True
+
+    def _out(self, text: str) -> None:
+        console.print(text, end="", markup=False, highlight=False, soft_wrap=True)
+
+    def _width(self) -> int:
+        return max(20, console.width - 2 * self.indent)
+
+    def _start_line(self) -> None:
+        if self.fresh:
+            self._out(" " * self.indent)
+            self.fresh = False
+
+    def _newline(self) -> None:
+        self._out("\n")
+        self.col = 0
+        self.fresh = True
+
+    def _flush_word(self) -> None:
+        if not self.word:
+            return
+        if self.col and self.col + len(self.word) > self._width():
+            self._newline()
+        self._start_line()
+        self._out(self.word)
+        self.col += len(self.word)
+        self.word = ""
+
+    def write(self, chunk: str) -> None:
+        for char in chunk:
+            if char == "\n":
+                self._flush_word()
+                self._newline()
+            elif char.isspace():
+                self._flush_word()
+                if self.col >= self._width():
+                    self._newline()
+                else:
+                    self._start_line()
+                    self._out(char)
+                    self.col += 1
+            else:
+                self.word += char
+                if len(self.word) >= self._width():
+                    self._flush_word()
+
+    def break_line(self) -> None:
+        # anything else printed mid-reply ends the line, so finish it here first
+        self._flush_word()
+        if not self.fresh:
+            self._newline()
+
+    def close(self) -> None:
+        self._flush_word()
 
 
 def show(message: str, style: str = "", *, before: int = 0, after: int = 0) -> None:
@@ -48,22 +110,3 @@ def notice(message: str, *, before: int = 0, after: int = 0) -> None:
 
 def muted(message: str, *, before: int = 0, after: int = 0) -> None:
     show(message, "muted", before=before, after=after)
-
-
-def user_panel(message: str) -> Panel:
-    return Panel(
-        Text(message),
-        title="You",
-        title_align="left",
-        border_style="user_border",
-        expand=False,
-    )
-
-
-def assistant_panel(markdown: str) -> Panel:
-    return Panel(
-        Markdown(markdown),
-        title="Assistant",
-        title_align="left",
-        border_style="assistant_border",
-    )

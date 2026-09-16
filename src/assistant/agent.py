@@ -7,7 +7,6 @@ from agno.db.sqlite import SqliteDb
 from agno.models.ollama import Ollama
 from agno.models.anthropic import Claude
 from prompt_toolkit import PromptSession
-from rich.live import Live
 
 from assistant import prompts, ui
 from assistant.config.credentials import (
@@ -76,31 +75,27 @@ def _setup_agent(model, user_gmail, toolkits, db, session_id) -> Agent:
 
 
 async def _stream_reply(agent: Agent, message: str, session_id: str) -> None:
-    text = ""
-    # rich allows one live display at a time: stop the spinner before the reply starts
     status = ui.console.status("Thinking…")
-    live = Live(
-        ui.assistant_panel(""),
-        console=ui.console,
-        refresh_per_second=15,
-        vertical_overflow="visible",
-    )
     status.start()
+    printer = ui.StreamPrinter()
+    streaming = False
     try:
         async for event in agent.arun(
             input=message, stream=True, stream_events=True, session_id=session_id
         ):
             if isinstance(event, ToolCallStartedEvent):
+                printer.break_line()
                 ui.show(f"→ {event.tool.tool_name}", "tool")
             elif isinstance(event, RunContentEvent) and event.content:
-                if not live.is_started:
+                if not streaming:
                     status.stop()
-                    live.start()
-                text += event.content
-                live.update(ui.assistant_panel(text))
+                    streaming = True
+                printer.write(event.content)
     finally:
         status.stop()
-        live.stop()
+        printer.close()
+    # end the reply's last line, then leave a blank line before the next prompt
+    ui.console.print()
     ui.console.print()
 
 
@@ -125,7 +120,7 @@ async def _chat(
                 return True, session_id
             continue
         if message:
-            ui.console.print(ui.user_panel(message))
+            ui.show(f"› {message}", "user", after=1)
             await _stream_reply(agent, message, session_id)
     return False, session_id
 
