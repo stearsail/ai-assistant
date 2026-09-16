@@ -6,6 +6,24 @@ PREFERENCES_FILE = CONFIG_DIR / "preferences.json"
 
 PROVIDERS = ("anthropic", "ollama")
 
+TIERS = ("core", "extended", "complete")
+
+# workspace-mcp access levels per service, cumulative and in order
+SERVICE_LEVELS = {
+    "calendar": ("readonly", "full"),
+    "gmail": ("readonly", "organize", "drafts", "send", "full"),
+    "tasks": ("readonly", "manage", "full"),
+    "drive": ("readonly", "full"),
+    "docs": ("readonly", "full"),
+    "sheets": ("readonly", "full"),
+    "slides": ("readonly", "full"),
+    "forms": ("readonly", "full"),
+    "chat": ("readonly", "full"),
+    "contacts": ("readonly", "full"),
+    "search": ("readonly", "full"),
+    "appscript": ("readonly", "full"),
+}
+
 DEFAULTS = {
     "model": {
         "provider": "ollama",
@@ -15,7 +33,17 @@ DEFAULTS = {
             "host": "http://localhost:11434",
             "num_ctx": 16384,
         },
-    }
+    },
+    "workspace": {
+        "tier": "core",
+        "permissions": {
+            "calendar": "full",
+            "tasks": "full",
+            "gmail": "readonly",
+            "docs": "readonly",
+        },
+        "disabled_tools": [],
+    },
 }
 
 
@@ -53,6 +81,10 @@ def load_preferences() -> dict:
     return _load_all()["model"]
 
 
+def load_workspace() -> dict:
+    return _load_all()["workspace"]
+
+
 def update_provider(provider: str) -> None:
     if provider not in PROVIDERS:
         raise ValueError(f"Unknown provider: {provider}")
@@ -66,4 +98,29 @@ def update_model(provider: str, model_id: str) -> None:
         raise ValueError(f"Unknown provider: {provider}")
     data = _load_all()
     data["model"][provider]["id"] = model_id
+    _write_preferences(data)
+
+
+def update_workspace(
+    permissions: dict | None = None,
+    tier: str | None = None,
+    disabled_tools: list[str] | None = None,
+) -> None:
+    if permissions is not None:
+        for service, level in permissions.items():
+            levels = SERVICE_LEVELS.get(service)
+            if levels is None:
+                raise ValueError(f"Unknown service: {service}")
+            if level not in levels:
+                raise ValueError(f"Unknown {service} level: {level}")
+    if tier is not None and tier not in TIERS:
+        raise ValueError(f"Unknown tier: {tier}")
+    data = _load_all()
+    workspace = data["workspace"]
+    if permissions is not None:
+        workspace["permissions"] = permissions
+    if tier is not None:
+        workspace["tier"] = tier
+    if disabled_tools is not None:
+        workspace["disabled_tools"] = disabled_tools
     _write_preferences(data)
