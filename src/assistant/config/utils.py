@@ -1,5 +1,5 @@
-import sys
 import json
+import sys
 from pathlib import Path
 
 CONFIG_DIR = Path.home() / ".config" / "assistant"

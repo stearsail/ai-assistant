@@ -1,16 +1,17 @@
 import argparse
 import asyncio
 import sys
+
+from assistant import prompts, ui
+from assistant.agent import run_agent
 from assistant.config.credentials import (
+    MissingAPIKey,
+    MissingCredentials,
     load_anthropic_api_key,
     load_credentials,
     save_anthropic_api_key,
     save_credentials,
-    MissingCredentials,
-    MissingAPIKey,
 )
-from assistant import prompts, ui
-from assistant.agent import run_agent
 from assistant.config.logs import route_agno_logs
 from assistant.config.preferences import (
     PROVIDERS,
@@ -64,7 +65,9 @@ async def setup_api() -> None:
                 return
             save_anthropic_api_key(api_key.strip())
             ui.success("Saved Anthropic API key in configuration", before=1)
-            ui.muted("To use Anthropic as model provider, change Preferences in Settings")
+            ui.muted(
+                "To use Anthropic as model provider, change Preferences in Settings"
+            )
         return
 
 
@@ -193,7 +196,9 @@ def main() -> int:
     model.set_defaults(func=_model_command)
 
     timezone = keys.add_parser("timezone", help="set the timezone the assistant uses")
-    timezone.add_argument("name", help="e.g. Europe/Chisinau, or 'system' to follow the system")
+    timezone.add_argument(
+        "name", help="e.g. Europe/Chisinau, or 'system' to follow the system"
+    )
     timezone.set_defaults(func=_timezone_command)
 
     args = parser.parse_args()

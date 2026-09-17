@@ -16,9 +16,9 @@ async def modify_timezone() -> bool:
     answer = await prompts.autocomplete(
         "Timezone, leave empty to follow the system:",
         choices=zones,
-        validate=lambda value: not value.strip()
-        or value.strip() in valid
-        or "Unknown timezone",
+        validate=lambda value: (
+            not value.strip() or value.strip() in valid or "Unknown timezone"
+        ),
     ).ask_async()
     if answer is None:
         return False

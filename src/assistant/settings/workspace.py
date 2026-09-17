@@ -31,7 +31,9 @@ async def _choose_services(current: dict) -> dict | None:
         level = await prompts.select(
             f"{service} access:",
             choices=[
-                questionary.Choice(title=_title(level, current.get(service)), value=level)
+                questionary.Choice(
+                    title=_title(level, current.get(service)), value=level
+                )
                 for level in SERVICE_LEVELS[service]
             ],
         ).ask_async()

@@ -1,7 +1,8 @@
 import asyncio
 
-import questionary
 import ollama
+import questionary
+
 from assistant import prompts, ui
 from assistant.config.credentials import MissingAPIKey, load_anthropic_api_key
 from assistant.config.preferences import (

@@ -30,6 +30,8 @@ def show_help() -> None:
     ui.show("Commands", "heading", before=1)
     for name, description in COMMANDS.items():
         ui.console.print(
-            Text.assemble("  ", (f"{name:<{width}}", "user"), "  ", (description, "muted"))
+            Text.assemble(
+                "  ", (f"{name:<{width}}", "user"), "  ", (description, "muted")
+            )
         )
     ui.console.print()

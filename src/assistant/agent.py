@@ -1,17 +1,17 @@
-from contextlib import AsyncExitStack
-from pathlib import Path
 import uuid
+from contextlib import AsyncExitStack
+
 from agno.agent import (
     Agent,
-    RunErrorEvent,
-    ToolCallStartedEvent,
     RunContentEvent,
+    RunErrorEvent,
     RunPausedEvent,
+    ToolCallStartedEvent,
 )
 from agno.db.base import SessionType
 from agno.db.sqlite import SqliteDb
-from agno.models.ollama import Ollama
 from agno.models.anthropic import Claude
+from agno.models.ollama import Ollama
 from prompt_toolkit import PromptSession
 
 from assistant import commands, prompts, ui
@@ -64,7 +64,7 @@ def _build_model(prefs: dict, api_key: str | None) -> Claude | Ollama:
 def _setup_agent(model, user_gmail, toolkits, db, session_id, timezone) -> Agent:
     instructions = [
         "You are a personal assistant with access to various tools, including the user's Google Workspace.",
-        "For Google Tasks calls you can use '@default' as an alias for the user's default list, unless the user mentions a different task list ID."
+        "For Google Tasks calls you can use '@default' as an alias for the user's default list, unless the user mentions a different task list ID.",
     ]
     if user_gmail:
         instructions.append(
@@ -128,7 +128,7 @@ async def _stream_reply(agent: Agent, message: str, session_id: str) -> None:
                     status.stop()
                     printer.break_line()
                     ui.error(f"Run failed: {event.content}", before=1)
-                    
+
             stream = None
             # a tool needs confirmation: ask, then carry on from where the run stopped
             if paused is not None:
@@ -215,7 +215,9 @@ async def run_agent(resume: bool = True) -> bool:
         model = _build_model(prefs, api_key)
         # fail fast, before the MCP server spawns and the first message has to fail
         if prefs["provider"] == "ollama":
-            error = await ollama_model_error(prefs["ollama"]["host"], prefs["ollama"]["id"])
+            error = await ollama_model_error(
+                prefs["ollama"]["host"], prefs["ollama"]["id"]
+            )
             if error:
                 ui.error(error)
                 return False

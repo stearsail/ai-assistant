@@ -1,4 +1,5 @@
 import os
+
 from assistant.config.utils import CONFIG_DIR, read_all, write_all
 
 CREDENTIALS_FILE = CONFIG_DIR / "credentials.json"

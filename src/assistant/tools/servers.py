@@ -15,16 +15,19 @@ class WorkspaceTools(MCPTools):
             self.requires_confirmation_tools = [
                 tool.name
                 for tool in tools
-                if not (tool.annotations and tool.annotations.readOnlyHint)
+                if not (tool.annotations and tool.annotations.read_only_hint)
             ]
         await super().build_tools()
 
 
 def _command(workspace: dict) -> str:
     permissions = " ".join(
-        f"{service}:{level}" for service, level in sorted(workspace["permissions"].items())
+        f"{service}:{level}"
+        for service, level in sorted(workspace["permissions"].items())
     )
-    return f"uvx workspace-mcp --permissions {permissions} --tool-tier {workspace['tier']}"
+    return (
+        f"uvx workspace-mcp --permissions {permissions} --tool-tier {workspace['tier']}"
+    )
 
 
 def _get_servers() -> dict:
@@ -32,7 +35,7 @@ def _get_servers() -> dict:
     env = {
         "GOOGLE_OAUTH_CLIENT_ID": creds["client_id"],
         "GOOGLE_OAUTH_CLIENT_SECRET": creds["client_secret"],
-        "WORKSPACE_MCP_LOG_LEVEL": "ERROR", #SET TO INFO TO DEBUG
+        "WORKSPACE_MCP_LOG_LEVEL": "ERROR",  # SET TO INFO TO DEBUG
         **{k: os.environ[k] for k in ("DISPLAY", "XDG_RUNTIME_DIR") if k in os.environ},
     }
     if creds.get("user_gmail"):
