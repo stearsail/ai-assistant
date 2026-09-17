@@ -3,6 +3,7 @@ from pathlib import Path
 import uuid
 from agno.agent import (
     Agent,
+    RunErrorEvent,
     ToolCallStartedEvent,
     RunContentEvent,
     RunPausedEvent,
@@ -89,8 +90,13 @@ async def _confirm_tools(paused: RunPausedEvent) -> None:
         ui.show(f"{tool.tool_name}({args})", "notice", before=1)
         if await prompts.confirm("Run this tool?").ask_async():
             requirement.confirm()
-        else:
-            requirement.reject("The user declined this tool call")
+            continue
+        # the note is sent back to the model as the tool's result
+        reason = await prompts.text("Tell the assistant why (optional):").ask_async()
+        note = "The user declined this tool call"
+        if reason and reason.strip():
+            note = f"{note}: {reason.strip()}"
+        requirement.reject(note)
 
 
 async def _stream_reply(agent: Agent, message: str, session_id: str) -> None:
@@ -112,6 +118,11 @@ async def _stream_reply(agent: Agent, message: str, session_id: str) -> None:
                 elif isinstance(event, RunContentEvent) and event.content:
                     status.stop()
                     printer.write(event.content)
+                elif isinstance(event, RunErrorEvent):
+                    status.stop()
+                    printer.break_line()
+                    ui.error(f"Run failed: {event.content}", before=1)
+                    
             stream = None
             # a tool needs confirmation: ask, then carry on from where the run stopped
             if paused is not None:

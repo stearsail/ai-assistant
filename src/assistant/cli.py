@@ -11,6 +11,7 @@ from assistant.config.credentials import (
 )
 from assistant import prompts, ui
 from assistant.agent import run_agent
+from assistant.config.logs import route_agno_logs
 from assistant.config.preferences import (
     PROVIDERS,
     DefaultPreferences,
@@ -181,4 +182,5 @@ def main() -> int:
     model.set_defaults(func=_model_command)
 
     args = parser.parse_args()
+    route_agno_logs()
     return asyncio.run(args.func(args))
