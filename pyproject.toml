@@ -1,22 +1,19 @@
 [project]
 name = "assistant"
 version = "0.1.0"
-description = "Add your description here"
+description = "A terminal personal assistant for Google Workspace, running on Ollama or Claude through MCP"
 readme = "README.md"
 authors = [
     { name = "Stephen", email = "stearsail@gmail.com" }
 ]
 requires-python = ">=3.10"
 dependencies = [
-    "agno[anthropic,ollama,sqlalchemy]>=3.0.6",
-    "fastmcp>=4.0.3",
-    "mcp>=2.1.1",
+    # openai: agno's Ollama model is built on its OpenAI one
+    "agno[anthropic,mcp,ollama,openai,sqlite]>=3.0.6",
     "ollama>=0.6.2",
-    "openai>=3.13.0",
-    "python-dotenv>=1.2.3",
+    "prompt-toolkit>=3.0.53",
     "questionary>=2.1.1",
     "rich>=15.0.0",
-    "sqlalchemy>=2.0.53",
 ]
 
 [project.scripts]
