@@ -21,6 +21,7 @@ text = partial(questionary.text, qmark=QMARK, style=QMARK_STYLE)
 password = partial(questionary.password, qmark=QMARK, style=QMARK_STYLE)
 confirm = partial(questionary.confirm, qmark=QMARK, style=QMARK_STYLE)
 select = partial(questionary.select, qmark=QMARK, style=QMARK_STYLE)
+autocomplete = partial(questionary.autocomplete, qmark=QMARK, style=QMARK_STYLE)
 
 # chat input, styled to match questionary prompts
 STYLE = merge_styles([DEFAULT_STYLE, QMARK_STYLE])

@@ -18,11 +18,13 @@ from assistant.config.preferences import (
     load_preferences,
     update_model,
     update_provider,
+    update_timezone,
 )
 from assistant.settings.anthropic import modify_api_key
 from assistant.settings.google import modify_oauth_credentials, prompt_all_fields
 from assistant.settings.menu import settings_menu
 from assistant.settings.provider import ollama_model_error
+from assistant.settings.timezone import describe_timezone
 from assistant.settings.validators import validate_anthropic_api_key
 from assistant.settings.view import view_configuration
 
@@ -147,6 +149,16 @@ async def _model_command(args: argparse.Namespace) -> int:
     return 0
 
 
+async def _timezone_command(args: argparse.Namespace) -> int:
+    name = None if args.name == "system" else args.name
+    try:
+        update_timezone(name)
+    except ValueError as e:
+        return _error(str(e))
+    ui.success(f"Timezone set to {describe_timezone(name)}")
+    return 0
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(prog="assistant")
     parser.add_argument(
@@ -180,6 +192,10 @@ def main() -> int:
     model = keys.add_parser("model", help="set the model for the current provider")
     model.add_argument("id", help="e.g. qwen3.5:4b or claude-sonnet-5")
     model.set_defaults(func=_model_command)
+
+    timezone = keys.add_parser("timezone", help="set the timezone the assistant uses")
+    timezone.add_argument("name", help="e.g. Europe/Chisinau, or 'system' to follow the system")
+    timezone.set_defaults(func=_timezone_command)
 
     args = parser.parse_args()
     route_agno_logs()

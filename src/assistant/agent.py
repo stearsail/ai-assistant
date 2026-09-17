@@ -20,7 +20,12 @@ from assistant.config.credentials import (
     load_anthropic_api_key,
     load_credentials,
 )
-from assistant.config.preferences import load_preferences, update_provider
+from assistant.config.preferences import (
+    load_preferences,
+    load_timezone,
+    system_timezone,
+    update_provider,
+)
 from assistant.config.utils import CONFIG_DIR
 from assistant.settings.menu import settings_menu
 from assistant.tools.servers import build_toolkits
@@ -55,7 +60,7 @@ def _build_model(prefs: dict, api_key: str | None) -> Claude | Ollama:
     raise ValueError(f"Unknown provider: {provider}")
 
 
-def _setup_agent(model, user_gmail, toolkits, db, session_id) -> Agent:
+def _setup_agent(model, user_gmail, toolkits, db, session_id, timezone) -> Agent:
     instructions = [
         "You are a personal assistant with access to various tools, including the user's Google Workspace.",
         "For Google Tasks calls you can use '@default' as an alias for the user's default list, unless the user mentions a different task list ID."
@@ -76,7 +81,7 @@ def _setup_agent(model, user_gmail, toolkits, db, session_id) -> Agent:
         add_history_to_context=True,
         num_history_runs=3,
         add_datetime_to_context=True,
-        timezone_identifier="Europe/Bucharest",
+        timezone_identifier=timezone,
     )
     return agent
 
@@ -209,7 +214,8 @@ async def run_agent(resume: bool = True) -> None:
         model = _build_model(prefs, api_key)
         async with AsyncExitStack() as stack:
             toolkits = [await stack.enter_async_context(t) for t in build_toolkits()]
-            agent = _setup_agent(model, user_gmail, toolkits, db, session_id)
+            timezone = load_timezone() or system_timezone()
+            agent = _setup_agent(model, user_gmail, toolkits, db, session_id, timezone)
             reload, session_id = await _chat(agent, session, session_id)
         if not reload:
             return

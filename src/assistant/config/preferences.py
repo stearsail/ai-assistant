@@ -1,4 +1,7 @@
 import copy
+import os
+import zoneinfo
+from pathlib import Path
 
 from assistant.config.utils import CONFIG_DIR, read_all, write_all
 
@@ -34,6 +37,8 @@ DEFAULTS = {
             "num_ctx": 16384,
         },
     },
+    # None follows the system timezone
+    "timezone": None,
     "workspace": {
         "tier": "core",
         "permissions": {
@@ -98,6 +103,33 @@ def update_model(provider: str, model_id: str) -> None:
         raise ValueError(f"Unknown provider: {provider}")
     data = _load_all()
     data["model"][provider]["id"] = model_id
+    _write_preferences(data)
+
+
+def system_timezone() -> str:
+    # TZ wins, then the zone /etc/localtime links to, then /etc/timezone
+    candidates = [os.environ.get("TZ", "").lstrip(":")]
+    localtime = Path("/etc/localtime").resolve()
+    if "zoneinfo" in localtime.parts:
+        start = localtime.parts.index("zoneinfo") + 1
+        candidates.append("/".join(localtime.parts[start:]))
+    try:
+        candidates.append(Path("/etc/timezone").read_text().strip())
+    except OSError:
+        pass
+    zones = zoneinfo.available_timezones()
+    return next((name for name in candidates if name in zones), "UTC")
+
+
+def load_timezone() -> str | None:
+    return _load_all()["timezone"]
+
+
+def update_timezone(name: str | None) -> None:
+    if name is not None and name not in zoneinfo.available_timezones():
+        raise ValueError(f"Unknown timezone: {name}")
+    data = _load_all()
+    data["timezone"] = name
     _write_preferences(data)
 
 
