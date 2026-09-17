@@ -59,12 +59,12 @@ async def _ollama_choices(host: str, current: str) -> list[questionary.Choice] |
 async def ollama_model_error(host: str, model_id: str) -> str | None:
     choices = await _ollama_choices(host, current="")
     if choices is None:
-        return f"Could not connect to Ollama at {host}"
+        return f"Could not connect to Ollama at {host}. Start it with: ollama serve"
     match = next((c for c in choices if c.value == model_id), None)
     if match is None:
         return f"{model_id} is not installed. Pull it with: ollama pull {model_id}"
     if match.disabled:
-        return f"{model_id} has no tool support"
+        return f"{model_id} has no tool support. Pick another with: assistant config model <id>"
     return None
 
 

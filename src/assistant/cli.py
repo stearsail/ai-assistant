@@ -97,8 +97,7 @@ async def _chat_command(args: argparse.Namespace) -> int:
     except MissingCredentials as e:
         print(e, file=sys.stderr)
         return 1
-    await run_agent(resume=not args.new)
-    return 0
+    return 0 if await run_agent(resume=not args.new) else 1
 
 
 async def _settings_command(args: argparse.Namespace) -> int:
@@ -110,7 +109,7 @@ async def _show_command(args: argparse.Namespace) -> int:
     prefs = _preferences()
     provider = prefs["provider"]
     ui.show(f"  Provider: {provider} ({prefs[provider]['id']})", "heading", before=1)
-    await view_configuration()
+    await view_configuration(pause=False)
     return 0
 
 
@@ -198,5 +197,9 @@ def main() -> int:
     timezone.set_defaults(func=_timezone_command)
 
     args = parser.parse_args()
+    # prompts can't read from a pipe or a file, fail with a message instead of a traceback
+    interactive = {_chat_command, _settings_command, _api_key_command, _google_command}
+    if args.func in interactive and not sys.stdin.isatty():
+        return _error("This command needs an interactive terminal")
     route_agno_logs()
     return asyncio.run(args.func(args))

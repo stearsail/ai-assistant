@@ -4,7 +4,7 @@ from assistant import ui
 from assistant.config.credentials import CREDENTIALS_FILE, config_status
 
 
-async def view_configuration() -> bool:
+async def view_configuration(pause: bool = True) -> bool:
     rows = config_status()
     width = max(len(row["label"]) for row in rows)
 
@@ -28,5 +28,6 @@ async def view_configuration() -> bool:
             before=1,
         )
     ui.console.print()
-    await questionary.press_any_key_to_continue().ask_async()
+    if pause:
+        await questionary.press_any_key_to_continue().ask_async()
     return False

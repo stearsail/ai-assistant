@@ -28,6 +28,7 @@ from assistant.config.preferences import (
 )
 from assistant.config.utils import CONFIG_DIR
 from assistant.settings.menu import settings_menu
+from assistant.settings.provider import ollama_model_error
 from assistant.tools.servers import build_toolkits
 
 AGENT_ID = "personal-assistant-agent"
@@ -185,7 +186,7 @@ async def _chat(
     return False, session_id
 
 
-async def run_agent(resume: bool = True) -> None:
+async def run_agent(resume: bool = True) -> bool:
     db = SqliteDb(db_file=str(CONFIG_DIR / "sessions.db"))
     session = PromptSession(
         erase_when_done=True,
@@ -212,11 +213,17 @@ async def run_agent(resume: bool = True) -> None:
                 update_provider("ollama")
                 prefs = load_preferences()
         model = _build_model(prefs, api_key)
+        # fail fast, before the MCP server spawns and the first message has to fail
+        if prefs["provider"] == "ollama":
+            error = await ollama_model_error(prefs["ollama"]["host"], prefs["ollama"]["id"])
+            if error:
+                ui.error(error)
+                return False
         async with AsyncExitStack() as stack:
             toolkits = [await stack.enter_async_context(t) for t in build_toolkits()]
             timezone = load_timezone() or system_timezone()
             agent = _setup_agent(model, user_gmail, toolkits, db, session_id, timezone)
             reload, session_id = await _chat(agent, session, session_id)
         if not reload:
-            return
+            return True
         ui.notice("Restarting with new configuration", before=1, after=1)
