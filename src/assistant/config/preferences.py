@@ -47,7 +47,6 @@ DEFAULTS = {
             "gmail": "readonly",
             "docs": "readonly",
         },
-        "disabled_tools": [],
     },
 }
 
@@ -136,7 +135,6 @@ def update_timezone(name: str | None) -> None:
 def update_workspace(
     permissions: dict | None = None,
     tier: str | None = None,
-    disabled_tools: list[str] | None = None,
 ) -> None:
     if permissions is not None:
         for service, level in permissions.items():
@@ -153,6 +151,4 @@ def update_workspace(
         workspace["permissions"] = permissions
     if tier is not None:
         workspace["tier"] = tier
-    if disabled_tools is not None:
-        workspace["disabled_tools"] = disabled_tools
     _write_preferences(data)
