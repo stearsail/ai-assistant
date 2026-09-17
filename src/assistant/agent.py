@@ -56,7 +56,8 @@ def _build_model(prefs: dict, api_key: str | None) -> Claude | Ollama:
 
 def _setup_agent(model, user_gmail, toolkits, db, session_id) -> Agent:
     instructions = [
-        "You are a personal assistant with access to various tools, including the user's Google Workspace. "
+        "You are a personal assistant with access to various tools, including the user's Google Workspace.",
+        "For Google Tasks calls you can use '@default' as an alias for the user's default list, unless the user mentions a different task list ID."
     ]
     if user_gmail:
         instructions.append(
