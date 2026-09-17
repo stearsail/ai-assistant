@@ -14,7 +14,7 @@ from agno.models.ollama import Ollama
 from agno.models.anthropic import Claude
 from prompt_toolkit import PromptSession
 
-from assistant import prompts, ui
+from assistant import commands, prompts, ui
 from assistant.config.credentials import (
     MissingAPIKey,
     load_anthropic_api_key,
@@ -155,8 +155,14 @@ async def _chat(
             ).strip()
         except (EOFError, KeyboardInterrupt):
             break
-        if message in ("exit", "quit"):
+        if message in ("exit", "quit", "/exit"):
             break
+        if message == "/help":
+            commands.show_help()
+            continue
+        if message == "/clear":
+            ui.console.clear()
+            continue
         if message == "/new":
             session_id = str(uuid.uuid4())
             ui.notice("Started a new conversation", before=1, after=1)
@@ -164,6 +170,9 @@ async def _chat(
         if message == "/settings":
             if await settings_menu():
                 return True, session_id
+            continue
+        if message.startswith("/"):
+            ui.error(f"Unknown command {message.split()[0]}, type /help", after=1)
             continue
         if message:
             ui.show(f"› {message}", "user", after=1)
@@ -173,7 +182,11 @@ async def _chat(
 
 async def run_agent(resume: bool = True) -> None:
     db = SqliteDb(db_file=str(CONFIG_DIR / "sessions.db"))
-    session = PromptSession(erase_when_done=True)
+    session = PromptSession(
+        erase_when_done=True,
+        completer=commands.SlashCompleter(),
+        complete_while_typing=True,
+    )
     session_id = _latest_session_id(db) if resume else None
     if resume:
         ui.notice(
