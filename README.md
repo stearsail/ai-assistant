@@ -2,7 +2,8 @@
 
 A personal assistant that runs in your terminal and works with your Google Workspace
 (Calendar, Gmail, Tasks, Docs, …) through the [workspace-mcp](https://github.com/taylorwilsdon/google_workspace_mcp)
-server. It runs on a local model through Ollama, or on Claude with an Anthropic API key.
+server, and can search the web. It runs on a local model through Ollama, or on Claude with an
+Anthropic API key.
 
 ## Requirements
 

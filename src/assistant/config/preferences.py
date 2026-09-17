@@ -23,7 +23,6 @@ SERVICE_LEVELS = {
     "forms": ("readonly", "full"),
     "chat": ("readonly", "full"),
     "contacts": ("readonly", "full"),
-    "search": ("readonly", "full"),
     "appscript": ("readonly", "full"),
 }
 

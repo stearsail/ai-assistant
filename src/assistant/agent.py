@@ -12,6 +12,7 @@ from agno.db.base import SessionType
 from agno.db.sqlite import SqliteDb
 from agno.models.anthropic import Claude
 from agno.models.ollama import Ollama
+from agno.tools.websearch import WebSearchTools
 from prompt_toolkit import PromptSession
 
 from assistant import commands, prompts, ui
@@ -223,6 +224,8 @@ async def run_agent(resume: bool = True) -> bool:
                 return False
         async with AsyncExitStack() as stack:
             toolkits = [await stack.enter_async_context(t) for t in build_toolkits()]
+            # web search runs in-process with no API key, "auto" spreads it across engines
+            toolkits.append(WebSearchTools())
             timezone = load_timezone() or system_timezone()
             agent = _setup_agent(model, user_gmail, toolkits, db, session_id, timezone)
             reload, session_id = await _chat(agent, session, session_id)

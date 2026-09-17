@@ -9,7 +9,7 @@ authors = [
 requires-python = ">=3.10"
 dependencies = [
     # openai: agno's Ollama model is built on its OpenAI one
-    "agno[anthropic,mcp,ollama,openai,sqlite]>=3.0.6",
+    "agno[anthropic,ddg,mcp,ollama,openai,sqlite]>=3.0.6",
     "ollama>=0.6.2",
     "prompt-toolkit>=3.0.53",
     "questionary>=2.1.1",

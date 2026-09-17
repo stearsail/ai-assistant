@@ -5,6 +5,9 @@ from agno.tools.mcp import MCPTools
 from assistant.config.credentials import load_credentials
 from assistant.config.preferences import load_workspace
 
+# registered by the server but unusable: Google closed Custom Search to new customers
+UNUSABLE_TOOLS = ["search_custom"]
+
 
 class WorkspaceTools(MCPTools):
     # confirm by default: only tools the server itself marks read-only run without asking
@@ -17,6 +20,8 @@ class WorkspaceTools(MCPTools):
                 for tool in tools
                 if not (tool.annotations and tool.annotations.read_only_hint)
             ]
+            # agno raises on an excluded name the server doesn't list, so only exclude what's there
+            self.exclude_tools = [t.name for t in tools if t.name in UNUSABLE_TOOLS]
         await super().build_tools()
 
 
