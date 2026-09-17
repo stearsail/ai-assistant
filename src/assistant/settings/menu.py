@@ -2,8 +2,9 @@ import questionary
 
 from assistant import prompts
 from assistant.settings.anthropic import modify_api_key
-from assistant.settings.google import modify_oauth_credentials
+from assistant.settings.google import modify_oauth_credentials, reauthenticate_google
 from assistant.settings.provider import modify_provider_settings
+from assistant.settings.timezone import modify_timezone
 from assistant.settings.view import view_configuration
 from assistant.settings.workspace import modify_workspace_access
 
@@ -13,6 +14,8 @@ MENU = {
     "Change Anthropic API Key": modify_api_key,
     "Change provider settings": modify_provider_settings,
     "Change Google Workspace access": modify_workspace_access,
+    "Change timezone": modify_timezone,
+    "Re-authenticate Google account": reauthenticate_google,
 }
 
 

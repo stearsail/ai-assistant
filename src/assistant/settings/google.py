@@ -1,8 +1,11 @@
+from pathlib import Path
+
 import questionary
 
 from assistant import prompts, ui
 from assistant.config.credentials import (
     credential_status,
+    load_credentials,
     update_credential,
 )
 from assistant.settings.validators import (
@@ -20,6 +23,8 @@ FIELDS = {
     ),
     "user_gmail": ("Gmail Address", prompts.text, validate_user_gmail),
 }
+
+TOKENS_DIR = Path.home() / ".google_workspace_mcp" / "credentials"
 
 
 async def prompt_all_fields() -> dict | None:
@@ -63,3 +68,28 @@ async def modify_oauth_credentials() -> bool:
         if choice is None or choice == "Cancel":
             return changed
         changed = await _modify_selected_credential(choice) or changed
+
+
+def forget_google_token() -> bool:
+    # without its saved token the server asks to sign in on the next tool call
+    email = load_credentials().get("user_gmail")
+    token = TOKENS_DIR / f"{email}.json"
+    if not email or not token.exists():
+        return False
+    token.unlink()
+    return True
+
+
+async def reauthenticate_google() -> bool:
+    email = load_credentials().get("user_gmail")
+    confirm = await prompts.confirm(
+        f"Sign out {email}? Google will ask you to sign in again on the next tool call"
+    ).ask_async()
+    if not confirm:
+        return False
+    if not forget_google_token():
+        ui.muted("No saved Google sign-in to remove", before=1, after=1)
+        return False
+    ui.success("Signed out of Google", before=1, after=1)
+    # the server keeps the sign-in in memory too, True restarts it
+    return True

@@ -1,27 +1,13 @@
-from pathlib import Path
-
 import questionary
 
 from assistant import prompts, ui
-from assistant.config.credentials import load_credentials
 from assistant.config.preferences import (
     SERVICE_LEVELS,
     TIERS,
     load_workspace,
     update_workspace,
 )
-
-TOKENS_DIR = Path.home() / ".google_workspace_mcp" / "credentials"
-
-
-def _forget_token() -> bool:
-    # levels decide the OAuth scopes, so a wider one needs a new sign-in
-    email = load_credentials().get("user_gmail")
-    token = TOKENS_DIR / f"{email}.json"
-    if not email or not token.exists():
-        return False
-    token.unlink()
-    return True
+from assistant.settings.google import forget_google_token
 
 
 def _title(option: str, current: str | None) -> str:
@@ -79,7 +65,8 @@ async def modify_workspace_access() -> bool:
         return False
 
     update_workspace(permissions=permissions, tier=tier)
-    if permissions != workspace["permissions"] and _forget_token():
+    # levels decide the OAuth scopes, so a changed level needs a new sign-in
+    if permissions != workspace["permissions"] and forget_google_token():
         ui.notice("Google will ask you to sign in again on the next tool call")
     ui.success("Workspace access updated", before=1, after=1)
     return True
