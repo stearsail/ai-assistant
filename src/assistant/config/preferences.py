@@ -1,4 +1,5 @@
 import copy
+import json
 import os
 import zoneinfo
 from pathlib import Path
@@ -6,6 +7,7 @@ from pathlib import Path
 from assistant.config.utils import CONFIG_DIR, read_all, write_all
 
 PREFERENCES_FILE = CONFIG_DIR / "preferences.json"
+OBSIDIAN_CONFIG = Path.home() / ".config" / "obsidian" / "obsidian.json"
 
 PROVIDERS = ("anthropic", "ollama")
 
@@ -47,6 +49,7 @@ DEFAULTS = {
             "docs": "readonly",
         },
     },
+    "notes": {"vault": None},
 }
 
 
@@ -86,6 +89,10 @@ def load_preferences() -> dict:
 
 def load_workspace() -> dict:
     return _load_all()["workspace"]
+
+
+def load_notes() -> dict:
+    return _load_all()["notes"]
 
 
 def update_provider(provider: str) -> None:
@@ -151,3 +158,21 @@ def update_workspace(
     if tier is not None:
         workspace["tier"] = tier
     _write_preferences(data)
+
+
+def obsidian_vault() -> Path | None:
+    try:
+        vaults = json.loads(OBSIDIAN_CONFIG.read_text()).get("vaults", {}).values()
+    except (OSError, ValueError):
+        return None
+    best = max(
+        vaults, key=lambda v: (v.get("open", False), v.get("ts", 0)), default=None
+    )
+    return Path(best["path"]) if best else None
+
+
+def notes_vault() -> Path:
+    stored = load_notes()["vault"]
+    if stored:
+        return Path(stored).expanduser()
+    return obsidian_vault() or Path.home() / "Notes"
