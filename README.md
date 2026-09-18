@@ -2,8 +2,8 @@
 
 A personal assistant that runs in your terminal and works with your Google Workspace
 (Calendar, Gmail, Tasks, Docs, …) through the [workspace-mcp](https://github.com/taylorwilsdon/google_workspace_mcp)
-server, and can search the web. It runs on a local model through Ollama, or on Claude with an
-Anthropic API key.
+server, keeps notes in your Obsidian vault, and can search the web. It runs on a local model
+through Ollama, or on Claude with an Anthropic API key.
 
 ## Requirements
 
@@ -34,6 +34,18 @@ optionally an Anthropic API key. The first Google tool call opens a browser to s
 Tools that create, change or delete something ask before they run. When you decline,
 you can tell the assistant why.
 
+## Notes
+
+The assistant can list, read, create, append to, edit and delete notes in an Obsidian vault.
+Deleted notes are moved to the vault's `.trash` folder, so they can be restored.
+
+It uses the vault Obsidian has open (from `~/.config/obsidian/obsidian.json`), or `~/Notes`
+when there is none. To use a different vault, set it in `~/.config/assistant/preferences.json`:
+
+```json
+"notes": {"vault": "~/path/to/vault"}
+```
+
 ## Configuration
 
 ```bash
@@ -57,7 +69,7 @@ Google services, their access level and how many tools are loaded are chosen in
 | Path                                  | Holds                                   |
 |---------------------------------------|-----------------------------------------|
 | `~/.config/assistant/credentials.json` | OAuth client and API key (mode 0600)    |
-| `~/.config/assistant/preferences.json` | provider, model, timezone, Google access |
+| `~/.config/assistant/preferences.json` | provider, model, timezone, Google access, notes vault |
 | `~/.config/assistant/sessions.db`      | conversation history                    |
 | `~/.local/state/assistant/agno.log`    | agent logs                              |
 | `~/.google_workspace_mcp/credentials/` | Google sign-in tokens                   |
