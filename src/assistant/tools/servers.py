@@ -9,7 +9,7 @@ from assistant.config.preferences import load_workspace
 UNUSABLE_TOOLS = ["search_custom"]
 
 
-class WorkspaceTools(MCPTools):
+class ConfirmingMCPTools(MCPTools):
     # confirm by default: only tools the server itself marks read-only run without asking
     async def build_tools(self) -> None:
         if self.session is not None:
@@ -57,7 +57,7 @@ def _get_servers() -> dict:
 def build_toolkits() -> list[MCPTools]:
     server = _get_servers()
     toolkits = []
-    google_workspace = WorkspaceTools(
+    google_workspace = ConfirmingMCPTools(
         command=server["google_workspace"]["command"],
         env=server["google_workspace"]["env"],
     )
