@@ -90,13 +90,22 @@ def _setup_agent(model, user_gmail, toolkits, db, session_id, timezone) -> Agent
     return agent
 
 
+def _preview(value, limit: int = 200) -> str:
+    # display only: the tool still gets the full value
+    text = str(value)
+    if len(text) > limit:
+        text = f"{text[:limit]}… ({len(text)} characters)"
+    return text.replace("\n", "\n    ")
+
+
 async def _confirm_tools(paused: RunPausedEvent) -> None:
     for requirement in paused.active_requirements:
         if not requirement.needs_confirmation:
             continue
         tool = requirement.tool_execution
-        args = ", ".join(f"{k}={v}" for k, v in (tool.tool_args or {}).items())
-        ui.show(f"{tool.tool_name}({args})", "notice", before=1)
+        ui.show(tool.tool_name, "notice", before=1)
+        for key, value in (tool.tool_args or {}).items():
+            ui.muted(f"  {key}: {_preview(value)}")
         if await prompts.confirm("Run this tool?").ask_async():
             requirement.confirm()
             continue
