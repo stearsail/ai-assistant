@@ -24,12 +24,14 @@ from assistant.config.credentials import (
 from assistant.config.preferences import (
     load_preferences,
     load_timezone,
+    notes_vault,
     system_timezone,
     update_provider,
 )
 from assistant.config.utils import CONFIG_DIR
 from assistant.settings.menu import settings_menu
 from assistant.settings.provider import ollama_model_error
+from assistant.tools.notes import NotesTools
 from assistant.tools.servers import build_toolkits
 
 AGENT_ID = "personal-assistant-agent"
@@ -226,6 +228,7 @@ async def run_agent(resume: bool = True) -> bool:
             toolkits = [await stack.enter_async_context(t) for t in build_toolkits()]
             # web search runs in-process with no API key, "auto" spreads it across engines
             toolkits.append(WebSearchTools())
+            toolkits.append(NotesTools(notes_vault()))
             timezone = load_timezone() or system_timezone()
             agent = _setup_agent(model, user_gmail, toolkits, db, session_id, timezone)
             reload, session_id = await _chat(agent, session, session_id)
